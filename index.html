@@ -2,11 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Selian AI Gallery</title>
-
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+<title>AI Gallery Fixed</title>
 
 <style>
 body{
@@ -17,16 +13,16 @@ color:white;
 }
 
 header{
-padding:20px;
 text-align:center;
+padding:20px;
 background:rgba(255,255,255,0.05);
 backdrop-filter:blur(10px);
 }
 
 .container{
-padding:20px;
 max-width:900px;
 margin:auto;
+padding:20px;
 }
 
 .upload-box{
@@ -36,17 +32,17 @@ border-radius:15px;
 margin-bottom:20px;
 }
 
-input, button{
-padding:10px;
-margin:8px 0;
+input, select, button{
 width:100%;
-border-radius:10px;
+padding:10px;
+margin-top:10px;
 border:none;
+border-radius:10px;
 }
 
 button{
-cursor:pointer;
 background:white;
+cursor:pointer;
 font-weight:bold;
 }
 
@@ -57,9 +53,9 @@ gap:15px;
 }
 
 .card{
+background:#111;
 border-radius:15px;
 overflow:hidden;
-background:#111;
 }
 
 .card img{
@@ -79,24 +75,20 @@ opacity:0.7;
 <body>
 
 <header>
-<h1>AI Enhanced Gallery</h1>
-<p>Upload → Enhance → Post Instantly</p>
+<h1>AI Enhanced Gallery (Fixed)</h1>
+<p>Upload → Enhance → Publish</p>
 </header>
 
 <div class="container">
 
 <div class="upload-box">
-<h3>Upload Image</h3>
-
 <input type="file" id="file">
-
-<label>Enable Watermark</label>
 <select id="watermark">
-<option value="no">No</option>
-<option value="yes">Yes</option>
+<option value="no">No watermark</option>
+<option value="yes">Add watermark</option>
 </select>
 
-<button onclick="uploadImage()">Upload & Enhance</button>
+<button id="uploadBtn">Upload & Enhance</button>
 
 <progress id="progress" value="0" max="100"></progress>
 </div>
@@ -105,8 +97,11 @@ opacity:0.7;
 
 </div>
 
-<script>
-// 🔥 FIREBASE INIT (PUT YOUR CONFIG HERE)
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -116,118 +111,92 @@ const firebaseConfig = {
   appId: "XXXX"
 };
 
-firebase.initializeApp(firebaseConfig);
-const storage = firebase.storage();
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+const db = getFirestore(app);
 
-// 📌 IMAGE ENHANCEMENT (SIMULATED "8K UPSCALE")
-function enhanceImage(file, callback){
+// ---------------- IMAGE ENHANCER ----------------
+function enhanceImage(file){
+return new Promise((resolve)=>{
 const reader = new FileReader();
 
-reader.onload = function(e){
+reader.onload = e=>{
 let img = new Image();
 img.src = e.target.result;
 
-img.onload = function(){
-
+img.onload = ()=>{
 let canvas = document.createElement("canvas");
 
-// upscale 3x
 canvas.width = img.width * 3;
 canvas.height = img.height * 3;
 
 let ctx = canvas.getContext("2d");
 
-// improve quality
 ctx.imageSmoothingEnabled = true;
 ctx.imageSmoothingQuality = "high";
 
-// draw upscale
 ctx.drawImage(img,0,0,canvas.width,canvas.height);
 
-// subtle sharpening effect
-ctx.globalAlpha = 0.2;
-ctx.drawImage(canvas,0,0);
-
-callback(canvas.toDataURL("image/jpeg",0.95));
+resolve(canvas.toDataURL("image/jpeg",0.95));
 };
 };
 
 reader.readAsDataURL(file);
+});
 }
 
-// 📤 UPLOAD FUNCTION
-function uploadImage(){
+// ---------------- UPLOAD ----------------
+document.getElementById("uploadBtn").onclick = async ()=>{
 const file = document.getElementById("file").files[0];
 const watermark = document.getElementById("watermark").value;
 
 if(!file){
-alert("Select image first");
+alert("Select a file");
 return;
 }
 
-enhanceImage(file, async (enhancedDataUrl)=>{
+const enhanced = await enhanceImage(file);
 
-let fileName = Date.now() + ".jpg";
-let ref = storage.ref("gallery/" + fileName);
+const blob = await fetch(enhanced).then(r=>r.blob());
 
-// convert base64 to blob
-fetch(enhancedDataUrl)
-.then(res=>res.blob())
-.then(blob=>{
+const fileRef = ref(storage, "gallery/" + Date.now() + ".jpg");
 
-let uploadTask = ref.put(blob);
+await uploadBytes(fileRef, blob);
 
-uploadTask.on("state_changed",
+const url = await getDownloadURL(fileRef);
 
-(snapshot)=>{
-let progress = (snapshot.bytesTransferred / snapshot.totalBytes)*100;
-document.getElementById("progress").value = progress;
-},
-
-(error)=>{
-alert("Upload failed");
-},
-
-async ()=>{
-let url = await uploadTask.snapshot.ref.getDownloadURL();
-
-await db.collection("gallery").add({
+await addDoc(collection(db,"gallery"),{
 imageUrl:url,
-watermark:watermark,
+watermark,
 time:Date.now()
 });
 
 loadGallery();
-alert("Uploaded successfully!");
-}
-);
+alert("Uploaded!");
+};
 
-});
-
-});
-}
-
-// 🖼 LOAD GALLERY
+// ---------------- LOAD GALLERY ----------------
 async function loadGallery(){
-let gallery = document.getElementById("gallery");
+const gallery = document.getElementById("gallery");
 gallery.innerHTML = "";
 
-let snap = await db.collection("gallery").orderBy("time","desc").get();
+const q = query(collection(db,"gallery"), orderBy("time","desc"));
+const snap = await getDocs(q);
 
 snap.forEach(doc=>{
-let data = doc.data();
+const data = doc.data();
 
 gallery.innerHTML += `
 <div class="card">
 <img src="${data.imageUrl}">
-<small>${data.watermark=="yes"?"© Selian Gallery":""}</small>
+<small>${data.watermark==="yes"?"© Selian Gallery":""}</small>
 </div>
 `;
 });
 }
 
 loadGallery();
+
 </script>
 
 </body>
