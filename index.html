@@ -1,38 +1,347 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Image Enhancer Pro</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selian Gallery</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:linear-gradient(-45deg,#070b1a,#101d42,#172554,#09111f);
+background-size:400% 400%;
+animation:bgMove 15s ease infinite;
+color:white;
+min-height:100vh;
+overflow-x:hidden;
+}
+
+@keyframes bgMove{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
+
+header{
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+text-align:center;
+padding:20px;
+}
+
+.hero{
+backdrop-filter:blur(12px);
+background:rgba(255,255,255,.08);
+padding:40px;
+border-radius:30px;
+width:90%;
+max-width:800px;
+box-shadow:0 0 35px rgba(255,255,255,.15);
+}
+
+.hero h1{
+font-size:3rem;
+margin-bottom:15px;
+}
+
+.hero p{
+opacity:.8;
+margin-bottom:25px;
+line-height:1.7;
+}
+
+.hero button{
+border:none;
+padding:15px 30px;
+font-size:16px;
+border-radius:30px;
+cursor:pointer;
+background:white;
+transition:.4s;
+}
+
+.hero button:hover{
+transform:scale(1.08);
+}
+
+.filters{
+display:flex;
+justify-content:center;
+flex-wrap:wrap;
+gap:10px;
+padding:30px;
+}
+
+.filter-btn{
+padding:12px 22px;
+border:none;
+border-radius:30px;
+cursor:pointer;
+background:rgba(255,255,255,.1);
+color:white;
+backdrop-filter:blur(10px);
+transition:.4s;
+}
+
+.filter-btn:hover,
+.filter-btn.active{
+background:white;
+color:black;
+}
+
+.gallery{
+padding:20px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:20px;
+}
+
+.card{
+overflow:hidden;
+border-radius:25px;
+position:relative;
+background:rgba(255,255,255,.08);
+backdrop-filter:blur(12px);
+cursor:pointer;
+transition:.5s;
+}
+
+.card:hover{
+transform:translateY(-10px);
+}
+
+.card img{
+width:100%;
+height:300px;
+object-fit:cover;
+transition:.7s;
+}
+
+.card:hover img{
+transform:scale(1.1);
+}
+
+.overlay{
+position:absolute;
+bottom:0;
+width:100%;
+padding:15px;
+background:linear-gradient(
+transparent,
+rgba(0,0,0,.85)
+);
+}
+
+.lightbox{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+display:none;
+justify-content:center;
+align-items:center;
+background:rgba(0,0,0,.9);
+z-index:1000;
+}
+
+.lightbox img{
+max-width:90%;
+max-height:85%;
+border-radius:20px;
+}
+
+.close{
+position:absolute;
+top:20px;
+right:30px;
+font-size:35px;
+cursor:pointer;
+}
+
+footer{
+text-align:center;
+padding:40px;
+opacity:.7;
+}
+</style>
 </head>
 <body>
 
-<div class="container">
+<header>
+<div class="hero">
+<h1>Beautiful Gallery</h1>
+<p>
+Explore a modern image gallery with elegant effects,
+fullscreen viewing and responsive design.
+</p>
 
-  <h1>Image Enhancer Pro</h1>
+<button onclick="scrollGallery()">
+Explore Gallery
+</button>
+</div>
+</header>
 
-  <input type="password" id="adminPass" placeholder="Admin Password">
+<div class="filters">
 
-  <input type="file" id="upload" accept="image/*">
+<button class="filter-btn active"
+onclick="filterSelection('all')">
+All
+</button>
 
-  <div class="controls">
-    <label>
-      <input type="checkbox" id="watermarkToggle">
-      Add Watermark
-    </label>
+<button class="filter-btn"
+onclick="filterSelection('nature')">
+Nature
+</button>
 
-    <button onclick="enhanceImage()">Enhance</button>
-    <button onclick="downloadImage()">Download</button>
-    <button onclick="uploadToFirebase()">Upload to Firebase</button>
-  </div>
+<button class="filter-btn"
+onclick="filterSelection('space')">
+Space
+</button>
 
-  <canvas id="canvas"></canvas>
-
-  <p id="status"></p>
+<button class="filter-btn"
+onclick="filterSelection('travel')">
+Travel
+</button>
 
 </div>
 
-<script type="module" src="app.js"></script>
+<div class="gallery">
+
+<div class="card nature">
+<img src="https://picsum.photos/500/700?random=1">
+<div class="overlay">
+<h3>Nature View</h3>
+</div>
+</div>
+
+<div class="card space">
+<img src="https://picsum.photos/500/700?random=2">
+<div class="overlay">
+<h3>Galaxy</h3>
+</div>
+</div>
+
+<div class="card travel">
+<img src="https://picsum.photos/500/700?random=3">
+<div class="overlay">
+<h3>Travel Life</h3>
+</div>
+</div>
+
+<div class="card nature">
+<img src="https://picsum.photos/500/700?random=4">
+<div class="overlay">
+<h3>Forest</h3>
+</div>
+</div>
+
+<div class="card space">
+<img src="https://picsum.photos/500/700?random=5">
+<div class="overlay">
+<h3>Deep Space</h3>
+</div>
+</div>
+
+<div class="card travel">
+<img src="https://picsum.photos/500/700?random=6">
+<div class="overlay">
+<h3>Adventure</h3>
+</div>
+</div>
+
+</div>
+
+<div class="lightbox" id="lightbox">
+<span class="close" onclick="closeLightbox()">
+✕
+</span>
+
+<img id="lightbox-img">
+</div>
+
+<footer>
+Made by Selian
+</footer>
+
+<script>
+
+function scrollGallery(){
+window.scrollTo({
+top:window.innerHeight,
+behavior:"smooth"
+});
+}
+
+const cards=document.querySelectorAll(".card");
+
+cards.forEach(card=>{
+card.addEventListener("click",()=>{
+
+let img=card.querySelector("img");
+
+document.getElementById(
+"lightbox"
+).style.display="flex";
+
+document.getElementById(
+"lightbox-img"
+).src=img.src;
+
+});
+});
+
+function closeLightbox(){
+document.getElementById(
+"lightbox"
+).style.display="none";
+}
+
+function filterSelection(category){
+
+const cards=
+document.querySelectorAll(".card");
+
+cards.forEach(card=>{
+
+if(category==="all"){
+card.style.display="block";
+}
+else{
+
+if(card.classList.contains(category)){
+card.style.display="block";
+}
+else{
+card.style.display="none";
+}
+
+}
+
+});
+
+let btns=
+document.querySelectorAll(".filter-btn");
+
+btns.forEach(btn=>{
+btn.classList.remove("active");
+});
+
+event.target.classList.add(
+"active"
+);
+
+}
+
+</script>
 
 </body>
 </html>
